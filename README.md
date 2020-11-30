@@ -14,7 +14,7 @@ https://drive.google.com/file/d/1NuB9d6EcBCEFr2GLqpvyuPGkLqiEjucv/view?usp=shari
 ## 2. Edit file_path
 
   ```
-edit line by path to folder image okok
+edit line by path to folder image okok chưa
   ```
   
 ## 3. Run 
