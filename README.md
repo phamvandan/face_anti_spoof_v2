@@ -2,7 +2,10 @@
 
   ```
 Pytorch version >= 1.1.0+ and torchvision >= 0.3.0
+/retina/weights/Resnet50_Final.pth
+/weights/ckpt_iter.pth.tar
   ```
+
 
 ## 2. Edit file_path
 
