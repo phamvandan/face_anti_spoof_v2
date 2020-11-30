@@ -3,6 +3,7 @@ import cv2
 import os
 import time
 import sys
+import imutils
 
 import logging
 
@@ -19,6 +20,94 @@ LOCAL_IMAGE_LIST_PATH = path_folder[0].replace('\n','')
 #================================================================================
 
 net,device,cfg=load_net()
+img_heights =[800, 1500]
+def check_box_angle(landmarks):
+    y1 = landmarks[1]
+    y2 = landmarks[3]
+    y = landmarks[5]
+    if y1 < y and y2 < y:
+        return 0
+    elif y1 < y < y2:
+        return 270
+    elif y1 > y and y2 > y:
+        return 180
+    elif y2 < y < y1:
+        return 90
+    print("UNKNOWN")
+    return 0
+def rotate_box(bbox, angle, h, w):
+    x1, y1, x2, y2, conf = bbox
+    if angle == 0:
+        return bbox
+    elif angle == 90:
+        return w - y2, x1, w - y1, x2, conf
+    elif angle == 180:
+        return w - x2, h - y2, w - x1, h - y1, conf
+    else:
+        return y1, h - x2, y2, h - x1, conf
+def rotate_image(image, angle):
+    image_rs = None
+    if angle == 0:
+        image_rs = image
+    if angle == 90:
+        image_rs = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+    elif angle == 180:
+        image_rs = cv2.rotate(image, cv2.ROTATE_180)
+    elif angle == 270:
+        image_rs = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    return image_rs
+def faceboxes_detect(image, img_heights, exact_thresh):
+    box = None
+    old_conf = 0.5
+    image_rs = None
+    angle = None
+    resize_w = None
+    resize_h = None
+    landmark = None
+    for img_height in img_heights:
+        img = imutils.resize(image, height=img_height)
+        for i in range(4):
+            if i != 0:
+                img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+            bboxs, landmarks = do_detect(img, net, device, cfg)
+            if bboxs is None or len(bboxs) == 0:
+                continue
+            idx = np.argmax(bboxs[:, 4])
+            bbox = bboxs[idx]
+            if bbox[-1] > old_conf:
+                old_conf = bbox[-1]
+                box = bbox
+                angle = 90 * i
+                resize_h, resize_w = img.shape[:2]
+                landmark = landmarks[idx]
+
+            if old_conf > exact_thresh:
+                break
+
+    if box is not None:
+        image_rs = rotate_image(image, angle)
+        ori_h, ori_w = image_rs.shape[:2]
+        x, y, a, b, conf = box
+        box = [int(x * ori_w / resize_w), int(y * ori_h / resize_h), int(a * ori_w / resize_w),
+               int(b * ori_h / resize_h), conf]
+        # x, y, a, b, conf = box
+        # cv2.rectangle(image_rs, (x, y), (a, b), (0, 0, 255), 2)
+        # cv2.imshow("image_rs", image_rs)
+        # cv2.waitKey(0)
+        angle = check_box_angle(landmark)
+        print("angle", angle)
+        image_rs = rotate_image(image_rs, angle)
+        ori_h, ori_w = image_rs.shape[:2]
+        box = list(rotate_box(box, angle, ori_h, ori_w))
+        # x, y, a, b, _ = box
+
+        # box[2] = a - x
+        # box[3] = b - y
+
+        # cv2.rectangle(image_rs, (x, y), (a, b), (0, 0, 255), 2)
+        # cv2.imshow("image_rs", image_rs)
+        # cv2.waitKey(0)
+    return image_rs, box
 def read_image(image_path):
     """
     Read an image from input path
@@ -36,19 +125,23 @@ def read_image(image_path):
     # Get the shape of input image
     real_h,real_w,c = img.shape
     #assert os.path.exists(image_path[:-4] + '_BB.txt'),'path not exists' + ' ' + image_path
-    rects, landms = do_detect(img, net, device, cfg)
+    #rects, landms = do_detect(img, net, device, cfg)
+    img,rects=faceboxes_detect(img, img_heights, exact_thresh=0.8)
+    # cv2.imshow("img",img)
+    # cv2.waitKey(0)
+    print(rects)
     #print(rects)
     try:
-        x,y,w,h,score = rects[0]
+        x,y,w,h,score = rects
     except:
         logging.info('Bounding Box of' + ' ' + image_path + ' ' + 'is wrong')   
 
     try:
-        w = int(float(w))+int((float(w)-float(x))/5.0)
+        w = int(float(w))+int((float(w)-float(x))/4.0)
         #print(w)
-        h = int(float(h))+int((float(h)-float(y))/5.0)
-        x = int(float(x))-int((float(w)-float(x))/5.0)
-        y = int(float(y))-int((float(h)-float(y))/5.0)
+        h = int(float(h))+int((float(h)-float(y))/4.0)
+        x = int(float(x))-int((float(w)-float(x))/4.0)
+        y = int(float(y))-int((float(h)-float(y))/4.0)
         # # # Crop face based on its bounding box
         y1 = 0 if y < 0 else y
         x1 = 0 if x < 0 else x 
