@@ -137,11 +137,11 @@ def read_image(image_path):
         logging.info('Bounding Box of' + ' ' + image_path + ' ' + 'is wrong')   
 
     try:
-        w = int(float(w))+int((float(w)-float(x))/4.0)
+        w = int(float(w))+int((float(w)-float(x))/5.0)
         #print(w)
-        h = int(float(h))+int((float(h)-float(y))/4.0)
-        x = int(float(x))-int((float(w)-float(x))/4.0)
-        y = int(float(y))-int((float(h)-float(y))/4.0)
+        h = int(float(h))+int((float(h)-float(y))/5.0)
+        x = int(float(x))-int((float(w)-float(x))/5.0)
+        y = int(float(y))-int((float(h)-float(y))/5.0)
         # # # Crop face based on its bounding box
         y1 = 0 if y < 0 else y
         x1 = 0 if x < 0 else x 
