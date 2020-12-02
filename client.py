@@ -35,6 +35,7 @@ def check_box_angle(landmarks):
         return 90
     print("UNKNOWN")
     return 0
+
 def rotate_box(bbox, angle, h, w):
     x1, y1, x2, y2, conf = bbox
     if angle == 0:
@@ -45,6 +46,7 @@ def rotate_box(bbox, angle, h, w):
         return w - x2, h - y2, w - x1, h - y1, conf
     else:
         return y1, h - x2, y2, h - x1, conf
+
 def rotate_image(image, angle):
     image_rs = None
     if angle == 0:
@@ -56,6 +58,7 @@ def rotate_image(image, angle):
     elif angle == 270:
         image_rs = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
     return image_rs
+
 def faceboxes_detect(image, img_heights, exact_thresh):
     box = None
     old_conf = 0.5
@@ -99,10 +102,10 @@ def faceboxes_detect(image, img_heights, exact_thresh):
         image_rs = rotate_image(image_rs, angle)
         ori_h, ori_w = image_rs.shape[:2]
         box = list(rotate_box(box, angle, ori_h, ori_w))
-        # x, y, a, b, _ = box
+        x, y, a, b, _ = box
 
-        # box[2] = a - x
-        # box[3] = b - y
+        box[2] = a - x
+        box[3] = b - y
 
         # cv2.rectangle(image_rs, (x, y), (a, b), (0, 0, 255), 2)
         # cv2.imshow("image_rs", image_rs)
@@ -134,7 +137,9 @@ def read_image(image_path):
     print(rects)
     #print(rects)
     try:
-        x,y,w,h,score = rects
+        x,y,a,b,score = rects
+        w = x+a
+        h = y+b
     except:
         logging.info('Bounding Box of' + ' ' + image_path + ' ' + 'is wrong')   
 

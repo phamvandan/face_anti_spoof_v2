@@ -75,7 +75,7 @@ def run_test(detector_class):
             # output_probs[i] = float(prob[0][1])
             tong=tong+1
             if prob[0][1] >= 0.81 and prob[0][0]<0.4  :
-                print(image_id," is fake "," : ",float(prob[0][1]))
+                print(image_id," is fake "," : ", float(prob[0][1]))
                 results.append([image_id, "f1", float(prob[0][1])])
             else:
                 # print(ori_image.shape)
