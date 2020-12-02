@@ -105,9 +105,13 @@ def run_test(detector_class):
                     print("fake", image_id, "confidence=", value)
                     results.append([image_id, "f2", float(value)])
                 else:
-                    print("fake", image_id, "confidence=", value)
-                    real = real+1
-                    results.append([image_id, "r", float(value)])
+                    if value <= 0.67:
+                        print("fake", image_id, "confidence=", value)
+                        results.append([image_id, "f2", float(value)])
+                    else:
+                        print("real", image_id, "confidence=", value)
+                        real = real+1
+                        results.append([image_id, "r", float(value)])
         except:
             # send errors to the eval frontend
             logging.error("Image id failed: {}".format(image_id))
