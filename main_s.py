@@ -24,20 +24,14 @@ import logging
 import pandas as pd
 import numpy as np
 from client import get_image, verify_output
-from src.anti_spoof_predict import AntiSpoofPredict
-from src.generate_patches import CropImage
-from src.utility import parse_model_name
 from datetime import datetime
-from  client import  LOCAL_IMAGE_LIST_PATH, read_image
 logging.basicConfig(level=logging.INFO)
-model_dir="./resources/anti_spoof_models"
-model_test = AntiSpoofPredict(0)
-image_cropper = CropImage()
+
 
 from tsn_predict import TSNPredictor as CelebASpoofDetector
 
 
-def run_test(detector_class):
+def run_test(detector_class, image_iter):
     """
     In this function we create the detector instance. And evaluate the wall time for performing CelebASpoofDetector.
     """
@@ -60,54 +54,27 @@ def run_test(detector_class):
     tong=0
     results=[]
     logging.info("Starting runtime evaluation")
-    image_list = os.listdir(LOCAL_IMAGE_LIST_PATH)
-    # image_list=[]
-    # for img_path in list_img:
-    #     image_list.append(os.path.join(img_folder,img_path))
-
-    for idx, image_id in enumerate(image_list):
-        # get image from local file
+    for image_id, image in image_iter:
+        time_before = time.time()
         try:
-            image, bbox, ori_img = read_image(image_id)
             prob = detector.predict(image)
-            print(prob)
-            # for idx, i in enumerate(image_id):
-            # output_probs[i] = float(prob[0][1])
-            tong=tong+1
-            if prob[0][1] >= 0.81 and prob[0][0]<0.4  :
-                print(image_id," is fake "," : ",float(prob[0][1]))
-                results.append([image_id, "f1", float(prob[0][1])])
-            else:
-                # print(ori_image.shape)
-                prediction = np.zeros((1, 3))
-                test_speed = 0
-                # sum the prediction from single model's result
-                for model_name in os.listdir(model_dir):
-                    h_input, w_input, model_type, scale = parse_model_name(model_name)
-                    param = {
-                        "org_img": ori_img,
-                        "bbox": bbox,
-                        "scale": scale,
-                        "out_w": w_input,
-                        "out_h": h_input,
-                        "crop": True,
-                    }
-                    if scale is None:
-                        param["crop"] = False
-                    img = image_cropper.crop(**param)
-                    start = time.time()
-                    prediction += model_test.predict(img, os.path.join(model_dir, model_name))
-                    test_speed += time.time() - start
-                print("Prediction cost {:.2f} s".format(test_speed))
-                label = np.argmax(prediction)
-                value = prediction[0][label] / 2
-                if not label == 1:
-                    print("fake", image_id, "confidence=", value)
-                    results.append([image_id, "f2", float(value)])
-                else:
-                    print("fake", image_id, "confidence=", value)
-                    real = real+1
-                    results.append([image_id, "r", float(value)])
+            for idx,i in enumerate(image_id):
+                output_probs[i] = float(prob[idx][1])
+                tong=tong+1
+                if prob[idx][1] >= 0.81 and prob[idx][0]<0.4  :
+                    print(image_id[idx]," is fake "," : ",float(prob[idx][1]))
+                    results.append([image_id[idx], 0, float(prob[idx][1])])
+                    
+                elif prob[idx][0]> 0.4 and prob[idx][1]<0.4  :
+                    print(image_id[idx]," is real "," : ",float(prob[idx][0]))
+                    real=real+1
+                    results.append([image_id[idx], 1, float(prob[idx][0])])
+                    # cv2.imshow("image",image[idx])
+                    # cv2.waitKey(0)
+                else :
+                    print(image_id[idx]," not detect "," : ",float(prob[idx][1]))
+                    results.append([image_id[idx], 2, float(prob[idx][0])])
+                    not_de=not_de+1
         except:
             # send errors to the eval frontend
             logging.error("Image id failed: {}".format(image_id))
@@ -137,4 +104,5 @@ def run_test(detector_class):
 
 
 if __name__ == '__main__':
-    run_test(CelebASpoofDetector)
+    celebA_spoof_image_iter = get_image()
+    run_test(CelebASpoofDetector, celebA_spoof_image_iter)

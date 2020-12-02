@@ -108,6 +108,8 @@ def faceboxes_detect(image, img_heights, exact_thresh):
         # cv2.imshow("image_rs", image_rs)
         # cv2.waitKey(0)
     return image_rs, box
+
+
 def read_image(image_path):
     """
     Read an image from input path
@@ -121,12 +123,12 @@ def read_image(image_path):
     image_path = LOCAL_ROOT + image_path
 
     img = cv2.imread(image_path)
-
     # Get the shape of input image
     real_h,real_w,c = img.shape
     #assert os.path.exists(image_path[:-4] + '_BB.txt'),'path not exists' + ' ' + image_path
     #rects, landms = do_detect(img, net, device, cfg)
-    img,rects=faceboxes_detect(img, img_heights, exact_thresh=0.8)
+    img, rects = faceboxes_detect(img, img_heights, exact_thresh=0.8)
+    ori_img = img.copy()
     # cv2.imshow("img",img)
     # cv2.waitKey(0)
     print(rects)
@@ -164,10 +166,10 @@ def read_image(image_path):
 
     except:
         logging.info('Cropping Bounding Box of' + ' ' + image_path + ' ' + 'goes wrong')   
-    #cv2.imshow("img",img)
-    #cv2.waitKey(0)
+    # cv2.imshow("img",img)
+    # cv2.waitKey(0)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    return img
+    return img, rects, ori_img
 
 
 
@@ -189,12 +191,16 @@ def get_image(img_folder=LOCAL_IMAGE_LIST_PATH ):
     Batch_size =50
     logging.info("Batch_size= {}".format(Batch_size))
     n = 0
+    final_ori_image = []
+    final_image_bbox = []
     final_image = []
     final_image_id = []
     for idx,image_id in enumerate(image_list):
         # get image from local file
         try:
-            image = read_image(image_id)
+            image, bbox, ori_img = read_image(image_id)
+            final_image_bbox.append(bbox)
+            final_ori_image.append(ori_img)
             final_image.append(image)
             final_image_id.append(image_id)
             n += 1
@@ -205,10 +211,15 @@ def get_image(img_folder=LOCAL_IMAGE_LIST_PATH ):
         if n == Batch_size or idx == len(image_list) - 1:
             np_final_image_id = np.array(final_image_id)
             np_final_image = np.array(final_image)
+            np_final_image_bbox = np.array(final_image_bbox)
+            np_final_ori_image = np.array(final_ori_image)
             n = 0
             final_image = []
             final_image_id = []
-            yield np_final_image_id, np_final_image
+            final_image_bbox = []
+            final_ori_image = []
+            yield np_final_image_id, np_final_image, np_final_image_bbox, np_final_ori_image
+
 
 
 #Get the threshold under several fpr

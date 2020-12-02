@@ -62,11 +62,11 @@ class TSNPredictor(CelebASpoofDetector):
             rst = self.net(input_var).detach()
         return rst.reshape(-1, self.num_class)
 
-    def predict(self, images):
+    def predict(self, image):
         real_data = []
-        for image in images:
-            data = self.preprocess_data(image)
-            real_data.append(data)
+        # for image in images:
+        data = self.preprocess_data(image)
+        real_data.append(data)
         rst = self.eval_image(real_data)
         #print(rst)
         rst = torch.nn.functional.softmax(rst, dim=1).cpu().numpy().copy()
