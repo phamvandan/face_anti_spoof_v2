@@ -1,3 +1,4 @@
 /retina/weights/Resnet50_Final.pth
 /weights/ckpt_iter.pth.tar
 *.csv
+/src/default_config.py
